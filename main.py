@@ -1,6 +1,6 @@
 import socket
 
-def start_server(host='0.0.0.0', port=5000):
+def start_server(host='10.70.9.251', port=255):
     """Start a TCP server that listens for incoming strings."""
     try:
         with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as server_socket:
