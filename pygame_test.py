@@ -1,53 +1,130 @@
+from email.mime import text
+from tkinter import font
+
 import pygame
+import playsound
 import logic
 grid = []
 turn = "R"
 
+
 def drop_update():
     global grid
+    global rendered_grid
     global turn
     pygame.init()
     WIDTH = 1000
     HEIGHT = 1800
-
+    font = pygame.font.Font("freesansbold.ttf", 64)
+    add_pos = [-1,-1]
     surface = pygame.display.set_mode((WIDTH,HEIGHT))
     pos = (WIDTH//2,HEIGHT//2 - 75 * 3 - 25)
+    fall_pos = (WIDTH//2,HEIGHT//2 - 75 * 3 - 25)
+    fall_velocity = (0,0)
+    falling = False
     result = 3
     running = True
+    direction = [0,0]
     RED = (255, 0, 0)
     WHITE = (255, 255, 255)
+    YELLOW = (255, 255, 0)
+    BLACK = (0, 0, 0)
     clock = pygame.time.Clock()
+    wait_till_win = -1
+    move_time = 0
+    bounces = 0
     while running:
+        
         surface.fill(WHITE)
-        pygame.draw.circle(surface,RED,pos,37.5,0)
+        pygame.draw.circle(surface,RED if turn == "R" else YELLOW,pos,37.5,0)
         for y in range(len(grid)):
             for x in range(len(grid[0])):
-                x_pos = x * 75
-                y_pos = y * 75
-                pygame.draw.circle(surface,RED,(x_pos,y_pos),37.5,0)
-
+                x_pos = (x-3) * 75 + WIDTH//2
+                y_pos = (y-2) * 75 + HEIGHT//2 
+                if add_pos == [x,y] and falling:
+                    colour = WHITE
+                elif grid[y][x] == "R" :
+                    colour = RED
+                elif grid[y][x] == "Y":
+                    colour = YELLOW
+                else:
+                    colour = WHITE
+                pygame.draw.circle(surface,colour,(x_pos,y_pos),37.5,0)
+        if falling:
+            x_pos = (add_pos[0]-3) * 75 + WIDTH//2
+            y_pos = (add_pos[1]-2) * 75 + HEIGHT//2 
+            pygame.draw.circle(surface,YELLOW if turn == "R" else RED,fall_pos,37.5,0)
+            fall_pos = (fall_pos[0] + fall_velocity[0],fall_pos[1] + fall_velocity[1])
+            fall_velocity = (fall_velocity[0],fall_velocity[1] + 0.2)
+            if fall_pos[1] > y_pos:
+                bounces += 1
+                fall_velocity = (fall_velocity[0],fall_velocity[1] * -0.4)
+                fall_pos = (fall_pos[0],y_pos)
+                print("FALL VELOCITY",fall_velocity[1])
+                sound = pygame.mixer.Sound("sound/freesound_community-stone-dropping-6843.mp3")
+                sound.set_volume(1-(0.3 * bounces))
+                sound.play()
+                if bounces == 3:
+                    falling = False
+                
+        if direction != [0,0]:
+            pos = (pos[0] + direction[0] * 15,pos[1] + direction[1] * 15)
+            move_time -= 1
+        if move_time == 0:
+            direction = [0,0]
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 running = False
-            if event.type == pygame.KEYDOWN:
+            if event.type == pygame.KEYDOWN and direction == [0,0]:
                 if event.key == pygame.K_ESCAPE:
                     running = False
                 if event.key == pygame.K_LEFT and 0 < result:
-                    pos = (pos[0] - 75,pos[1])
+                    direction = [-1,0]
                     result -= 1
+                    move_time = 5
                 if event.key == pygame.K_RIGHT and result < 6:
-                    pos = (pos[0] + 75,pos[1])
+                    direction = [1,0]
                     result += 1
+                    move_time = 5
                 if event.key == pygame.K_z:
                     add_pos = logic.do_turn(result)
-                    grid[add_pos[1]][add_pos[0]] = turn
-                    if turn == "R":
-                        turn = "Y"
-                    elif turn == "Y":
-                        turn = "R"
+                    if add_pos == None:
+                        pass
+                    elif add_pos == "WIN":
+                        print("WINNER IS",turn)
+                        winner = "RED" if turn == "R" else "YELLOW"
+                        text = font.render(winner + " WINS!", True, RED if turn == "R" else YELLOW)
+                        shadow = font.render(winner + " WINS!", True, BLACK)
+                        
+                        wait_till_win = 100    
+                    else:
+                        grid[add_pos[1]][add_pos[0]] = turn
+                        fall_pos = pos
+                        bounces = 0
+                        fall_velocity = (0,0)
+                        falling = True
+                        if turn == "R":
+                            turn = "Y"
+                        elif turn == "Y":
+                            turn = "R"
+                    
+                    if all(grid[0][x] != " " for x in range(7)):
+                        draw = True
+                        text = font.render("DRAW!", True, BLACK)
+                        shadow = font.render("DRAW!", True, WHITE)
+                        wait_till_win = 100
         
-        clock.tick(120)
+        if wait_till_win >= 0:
+            wait_till_win -= 1
+            surface.blit(shadow, (WIDTH//2 - text.get_width()//2 + 5, HEIGHT//2 - text.get_height()//2 + 5))
+            surface.blit(text, (WIDTH//2 - text.get_width()//2, HEIGHT//2 - text.get_height()//2))
+        if wait_till_win == 0:
+            grid = logic.start()
+            turn = "R"
         pygame.display.flip()
+        clock.tick(120)
+    
+    
 
 grid = logic.start()
 drop_update()

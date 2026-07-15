@@ -23,6 +23,8 @@ def start():
 def drop(x_pos,turn):
     y_drop = 0
     valid = False
+    if grid[y_drop][x_pos] != " ":
+        return None
     while y_drop != 5 and not valid:
         if grid[y_drop + 1][x_pos] == " ":
             y_drop += 1
@@ -55,7 +57,6 @@ def detect_wins():
             if grid[y][x] == type and grid[y][x] != " ":
                 same += 1
                 if same == 3:
-                    print("WIN PLAYER",type)
                     return True
             else:
                 same = 0
@@ -71,7 +72,6 @@ def detect_wins():
             if grid[y][x] == type and grid[y][x] != " ":
                 same += 1
                 if same == 3:
-                    print("WIN PLAYER",type)
                     return True
             else:
                 same = 0
@@ -89,7 +89,6 @@ def detect_wins():
             if grid[y][x] == type and grid[y][x] != " ":
                 same += 1
                 if same == 3:
-                    print("WIN PLAYER",type)
                     return True
             else:
                 same = 0
@@ -105,10 +104,13 @@ def do_turn(drop_point):
         pass
     else:
         drop_point = drop(drop_point,turn)
-        print(drop_point)
         win = detect_wins()
+        if drop_point == None:
+            return None
+        if win:
+            return "WIN"
         if turn == "R":
             turn = "Y"
         elif turn == "Y":
             turn = "R"
-        return drop_point
+        return drop_point 
